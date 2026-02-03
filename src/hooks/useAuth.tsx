@@ -7,7 +7,10 @@ interface Profile {
   user_id: string;
   name: string;
   plan: "free" | "basico" | "pro" | "business";
-  credits: number;
+  credits: number; // Backward compatibility alias
+  credits_balance: number;
+  monthly_credits_limit: number;
+  extra_credits: number;
   has_content_module: boolean;
   credits_reset_at: string;
   created_at: string;
@@ -45,7 +48,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    return data as Profile;
+    // Map database fields to Profile interface with backward compatibility
+    const profileData = data as any;
+    return {
+      ...profileData,
+      credits: profileData.credits_balance ?? profileData.credits ?? 0,
+      credits_balance: profileData.credits_balance ?? profileData.credits ?? 0,
+      monthly_credits_limit: profileData.monthly_credits_limit ?? 0,
+      extra_credits: profileData.extra_credits ?? 0,
+    } as Profile;
   };
 
   const refreshProfile = async () => {
