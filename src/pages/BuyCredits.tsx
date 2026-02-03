@@ -36,7 +36,7 @@ const creditPackages = [
 ];
 
 export default function BuyCredits() {
-  const { credits, plan } = useCredits();
+  const { creditsBalance, monthlyCredits, extraCredits, plan, daysUntilReset } = useCredits();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -44,6 +44,7 @@ export default function BuyCredits() {
     setLoading(packageId);
     
     // TODO: Integrate with payment system (Stripe)
+    // After payment confirmation, call addExtraCredits(packageCredits, 'Compra de pacote')
     toast({
       title: "Em breve!",
       description: `Pagamento de R$${price} para ${packageCredits} créditos será processado.`,
@@ -64,15 +65,32 @@ export default function BuyCredits() {
           </p>
         </div>
 
-        {/* Current credits */}
+        {/* Current credits with breakdown */}
         <Card variant="elevated">
           <CardHeader>
             <CardTitle>Seus créditos atuais</CardTitle>
           </CardHeader>
-          <CardContent>
-            <CreditsDisplay showUpgrade={false} />
-            <p className="text-sm text-muted-foreground mt-4">
+          <CardContent className="space-y-4">
+            <CreditsDisplay showUpgrade={false} showBreakdown={true} />
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{creditsBalance}</p>
+                <p className="text-xs text-muted-foreground">Total</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{monthlyCredits}</p>
+                <p className="text-xs text-muted-foreground">Mensal</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-juris-success">{extraCredits}</p>
+                <p className="text-xs text-muted-foreground">Extra</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
               Plano atual: <span className="font-medium capitalize">{plan}</span>
+              {daysUntilReset !== null && (
+                <span className="ml-2">• Reset em {daysUntilReset} dias</span>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -141,9 +159,10 @@ export default function BuyCredits() {
           <CardContent>
             <ul className="space-y-3">
               {[
-                "Créditos nunca expiram",
+                "Créditos extras nunca expiram",
                 "Use em qualquer funcionalidade do sistema",
-                "Acumulam com os créditos do seu plano",
+                "São preservados no reset mensal",
+                "Somam ao seu saldo total",
                 "Pagamento único, sem assinatura",
               ].map((benefit, index) => (
                 <li key={index} className="flex items-center gap-3">

@@ -11,10 +11,10 @@ export const CREDIT_COSTS = {
   long_petition: 5,        // Petição longa
 } as const;
 
-// Plan configurations
+// Plan configurations with monthly credits
 export const PLAN_CONFIG = {
   free: {
-    monthlyCredits: 5, // Daily, but we'll track it
+    monthlyCredits: 150,
     features: {
       generateSimple: true,
       legalReview: true,
@@ -88,8 +88,19 @@ export function useCredits() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const getCredits = useCallback(() => {
-    return profile?.credits ?? 0;
+  // Get total credits balance
+  const getCreditsBalance = useCallback(() => {
+    return profile?.credits_balance ?? profile?.credits ?? 0;
+  }, [profile]);
+
+  // Get monthly credits remaining
+  const getMonthlyCredits = useCallback(() => {
+    return profile?.monthly_credits_limit ?? 0;
+  }, [profile]);
+
+  // Get extra credits (purchased)
+  const getExtraCredits = useCallback(() => {
+    return profile?.extra_credits ?? 0;
   }, [profile]);
 
   const getPlan = useCallback((): PlanType => {
@@ -103,10 +114,10 @@ export function useCredits() {
   }, [getPlan]);
 
   const canAfford = useCallback((action: ActionType): boolean => {
-    const credits = getCredits();
+    const credits = getCreditsBalance();
     const cost = CREDIT_COSTS[action];
     return credits >= cost;
-  }, [getCredits]);
+  }, [getCreditsBalance]);
 
   const debitCredits = async (action: ActionType, description?: string): Promise<boolean> => {
     if (!user) return false;
@@ -116,7 +127,7 @@ export function useCredits() {
     if (!canAfford(action)) {
       toast({
         title: "Créditos insuficientes",
-        description: `Esta ação requer ${cost} crédito(s). Você tem ${getCredits()} crédito(s).`,
+        description: `Esta ação requer ${cost} crédito(s). Você tem ${getCreditsBalance()} crédito(s).`,
         variant: "destructive",
       });
       return false;
@@ -142,7 +153,13 @@ export function useCredits() {
         return false;
       }
 
-      const result = data as { success: boolean; error?: string; remaining_credits?: number };
+      const result = data as { 
+        success: boolean; 
+        error?: string; 
+        remaining_credits?: number;
+        monthly_remaining?: number;
+        extra_remaining?: number;
+      };
 
       if (!result.success) {
         toast({
@@ -165,19 +182,142 @@ export function useCredits() {
     }
   };
 
+  // Add extra credits (for purchases)
+  const addExtraCredits = async (amount: number, reason?: string): Promise<boolean> => {
+    if (!user) return false;
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.rpc("add_extra_credits", {
+        p_user_id: user.id,
+        p_amount: amount,
+        p_reason: reason || 'purchase',
+      });
+
+      if (error) {
+        console.error("Error adding credits:", error);
+        toast({
+          title: "Erro ao adicionar créditos",
+          description: "Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const result = data as { success: boolean; error?: string; credits_balance?: number };
+
+      if (!result.success) {
+        toast({
+          title: "Erro",
+          description: result.error || "Não foi possível adicionar créditos.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      toast({
+        title: "Créditos adicionados!",
+        description: `+${amount} créditos foram adicionados à sua conta.`,
+      });
+
+      await refreshProfile();
+      return true;
+    } catch (error) {
+      console.error("Error adding credits:", error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply plan credits (for plan changes)
+  const applyPlanCredits = async (plan: PlanType): Promise<boolean> => {
+    if (!user) return false;
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.rpc("apply_plan_credits", {
+        p_user_id: user.id,
+        p_plan: plan,
+      });
+
+      if (error) {
+        console.error("Error applying plan credits:", error);
+        toast({
+          title: "Erro ao aplicar plano",
+          description: "Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const result = data as { success: boolean; error?: string };
+
+      if (!result.success) {
+        toast({
+          title: "Erro",
+          description: result.error || "Não foi possível aplicar o plano.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      await refreshProfile();
+      return true;
+    } catch (error) {
+      console.error("Error applying plan credits:", error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const hasContentModule = useCallback(() => {
     return profile?.has_content_module ?? false;
   }, [profile]);
 
+  // Get credits reset date
+  const getResetDate = useCallback(() => {
+    if (!profile?.credits_reset_at) return null;
+    return new Date(profile.credits_reset_at);
+  }, [profile]);
+
+  // Days until reset
+  const getDaysUntilReset = useCallback(() => {
+    const resetDate = getResetDate();
+    if (!resetDate) return null;
+    const now = new Date();
+    const diffTime = resetDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }, [getResetDate]);
+
   return {
     loading,
-    credits: getCredits(),
+    // Total balance
+    credits: getCreditsBalance(),
+    creditsBalance: getCreditsBalance(),
+    // Breakdown
+    monthlyCredits: getMonthlyCredits(),
+    extraCredits: getExtraCredits(),
+    // Plan info
     plan: getPlan(),
+    planConfig: PLAN_CONFIG[getPlan()],
+    // Reset info
+    resetDate: getResetDate(),
+    daysUntilReset: getDaysUntilReset(),
+    // Feature checks
     hasFeature,
     canAfford,
+    // Actions
     debitCredits,
+    addExtraCredits,
+    applyPlanCredits,
     hasContentModule,
+    // Constants
     creditCosts: CREDIT_COSTS,
-    planConfig: PLAN_CONFIG,
+    allPlanConfigs: PLAN_CONFIG,
   };
 }
