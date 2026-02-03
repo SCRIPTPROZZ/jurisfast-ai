@@ -47,6 +47,63 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          credits_used: number
+          description: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          credits_used: number
+          description?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          credits_used?: number
+          description?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_purchases: {
+        Row: {
+          created_at: string
+          credits_amount: number
+          id: string
+          payment_id: string | null
+          payment_status: string
+          price_paid: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_amount: number
+          id?: string
+          payment_id?: string | null
+          payment_status?: string
+          price_paid: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_amount?: number
+          id?: string
+          payment_id?: string | null
+          payment_status?: string
+          price_paid?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_usage: {
         Row: {
           action_count: number
@@ -104,6 +161,9 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          credits: number
+          credits_reset_at: string | null
+          has_content_module: boolean
           id: string
           name: string
           plan: string
@@ -112,6 +172,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credits?: number
+          credits_reset_at?: string | null
+          has_content_module?: boolean
           id?: string
           name: string
           plan?: string
@@ -120,6 +183,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credits?: number
+          credits_reset_at?: string | null
+          has_content_module?: boolean
           id?: string
           name?: string
           plan?: string
@@ -133,7 +199,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_credits: {
+        Args: { p_credits: number; p_reason?: string; p_user_id: string }
+        Returns: Json
+      }
+      debit_credits: {
+        Args: {
+          p_action_type: string
+          p_credits: number
+          p_description?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      reset_monthly_credits: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

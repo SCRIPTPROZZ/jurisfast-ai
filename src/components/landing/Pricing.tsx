@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Check, Gift, Briefcase, Building } from "lucide-react";
+import { Check, X, Gift, Briefcase, Crown, Building, Coins, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const plans = [
   {
@@ -9,28 +10,51 @@ const plans = [
     icon: Gift,
     price: "Grátis",
     period: "para sempre",
+    credits: "5/dia",
     description: "Perfeito para começar",
     features: [
-      "5 ações por dia",
-      "Geração de documentos básica",
-      "Histórico básico (7 dias)",
-      "Suporte por email",
+      { text: "5 créditos por dia", included: true },
+      { text: "Gerar peças simples", included: true },
+      { text: "Revisão básica", included: true },
+      { text: "Histórico de 24h", included: true },
+      { text: "Exportar Word/PDF", included: false },
+      { text: "Análise de PDF", included: false },
     ],
     cta: "Começar grátis",
     variant: "pricing" as const,
   },
   {
-    name: "Pro",
+    name: "Básico",
     icon: Briefcase,
-    price: "R$69,90",
+    price: "R$79",
     period: "/mês",
-    description: "Para advogados produtivos",
+    credits: "450/mês",
+    description: "Para advogados ativos",
     features: [
-      "50 ações por dia",
-      "Resumo de contratos",
-      "Histórico completo",
-      "Suporte prioritário",
-      "Exportar em PDF",
+      { text: "450 créditos/mês", included: true },
+      { text: "Gerar peças", included: true },
+      { text: "Revisão jurídica", included: true },
+      { text: "Histórico de 7 dias", included: true },
+      { text: "Exportar texto", included: true },
+      { text: "Análise de PDF", included: false },
+    ],
+    cta: "Assinar Básico",
+    variant: "pricing" as const,
+  },
+  {
+    name: "Pro",
+    icon: Crown,
+    price: "R$149",
+    period: "/mês",
+    credits: "1.450/mês",
+    description: "Produtividade máxima",
+    features: [
+      { text: "1.450 créditos/mês", included: true },
+      { text: "Tudo do Básico", included: true },
+      { text: "Análise de PDF", included: true },
+      { text: "Biblioteca de modelos", included: true },
+      { text: "Histórico ilimitado", included: true },
+      { text: "Exportar Word e PDF", included: true },
     ],
     cta: "Assinar Pro",
     variant: "pricing-featured" as const,
@@ -39,16 +63,17 @@ const plans = [
   {
     name: "Business",
     icon: Building,
-    price: "R$139,90",
+    price: "R$299",
     period: "/mês",
+    credits: "3.450/mês",
     description: "Para escritórios",
     features: [
-      "Uso ilimitado",
-      "Todas as funcionalidades",
-      "Prioridade de processamento",
-      "Recursos avançados",
-      "API de integração",
-      "Suporte dedicado",
+      { text: "3.450 créditos/mês", included: true },
+      { text: "Tudo do Pro", included: true },
+      { text: "Multiusuário", included: true },
+      { text: "Logo do escritório", included: true },
+      { text: "API e Webhooks", included: true },
+      { text: "Suporte prioritário", included: true },
     ],
     cta: "Assinar Business",
     variant: "pricing" as const,
@@ -68,7 +93,7 @@ export function Pricing() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <Card
               key={plan.name}
@@ -77,30 +102,41 @@ export function Pricing() {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full">
                   Mais popular
                 </div>
               )}
 
               <CardHeader className="text-center pb-2">
-                <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                  <plan.icon className="w-7 h-7" />
+                <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <plan.icon className="w-6 h-6" />
                 </div>
-                <CardTitle className="text-xl">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
+                <CardTitle className="text-lg">{plan.name}</CardTitle>
+                <CardDescription className="text-xs">{plan.description}</CardDescription>
               </CardHeader>
 
-              <CardContent className="text-center">
-                <div className="mb-6">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+              <CardContent className="text-center space-y-4">
+                <div>
+                  <span className="text-3xl font-bold">{plan.price}</span>
+                  <span className="text-muted-foreground text-sm">{plan.period}</span>
                 </div>
 
-                <ul className="space-y-3 text-left">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span>{feature}</span>
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  <Coins className="w-3 h-3" />
+                  {plan.credits}
+                </div>
+
+                <ul className="space-y-2 text-left">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs">
+                      {feature.included ? (
+                        <Check className="w-3 h-3 text-juris-success flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <X className="w-3 h-3 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
+                      )}
+                      <span className={cn(!feature.included && "text-muted-foreground/50")}>
+                        {feature.text}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -111,13 +147,38 @@ export function Pricing() {
                   asChild
                   variant={plan.popular ? "hero" : "outline"}
                   className="w-full"
-                  size="lg"
                 >
                   <Link to="/auth?mode=signup">{plan.cta}</Link>
                 </Button>
               </CardFooter>
             </Card>
           ))}
+        </div>
+
+        {/* Content Module Promo */}
+        <div className="mt-16 max-w-3xl mx-auto">
+          <Card variant="glow" className="overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-juris-warning/10" />
+            <CardContent className="relative p-8 text-center">
+              <div className="flex flex-col md:flex-row items-center gap-6 justify-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-juris-warning flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-center md:text-left">
+                  <h3 className="text-xl font-bold mb-2">JurisFast Content AI</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Gere conteúdo ilimitado para suas redes sociais. <strong>Pagamento único de R$119,99</strong> — sem mensalidades!
+                  </p>
+                  <Button asChild variant="hero">
+                    <Link to="/auth?mode=signup">
+                      <Sparkles className="w-4 h-4" />
+                      Comprar uma vez, usar ilimitado
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
