@@ -10,8 +10,11 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import GenerateDocument from "./pages/GenerateDocument";
 import SummarizeContract from "./pages/SummarizeContract";
+import AnalyzePDF from "./pages/AnalyzePDF";
 import History from "./pages/History";
 import Plans from "./pages/Plans";
+import BuyCredits from "./pages/BuyCredits";
+import ContentModule from "./pages/ContentModule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +54,14 @@ const App = () => (
               }
             />
             <Route
+              path="/dashboard/analisar-pdf"
+              element={
+                <ProtectedRoute>
+                  <AnalyzePDF />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/historico"
               element={
                 <ProtectedRoute>
@@ -63,6 +74,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Plans />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/creditos"
+              element={
+                <ProtectedRoute>
+                  <BuyCredits />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/content"
+              element={
+                <ProtectedRoute>
+                  <ContentModule />
                 </ProtectedRoute>
               }
             />

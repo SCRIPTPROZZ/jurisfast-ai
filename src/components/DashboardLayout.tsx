@@ -2,13 +2,17 @@ import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
+import { useCredits } from "@/hooks/useCredits";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   FileText,
   FileSearch,
+  FileUp,
   History,
   CreditCard,
+  Coins,
+  Sparkles,
   LogOut,
   Menu,
   X,
@@ -19,8 +23,11 @@ const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/dashboard/gerar", icon: FileText, label: "Gerar Documento" },
   { to: "/dashboard/resumir", icon: FileSearch, label: "Resumir Contrato" },
+  { to: "/dashboard/analisar-pdf", icon: FileUp, label: "Analisar PDF" },
   { to: "/dashboard/historico", icon: History, label: "Histórico" },
   { to: "/dashboard/planos", icon: CreditCard, label: "Planos" },
+  { to: "/dashboard/creditos", icon: Coins, label: "Comprar Créditos" },
+  { to: "/dashboard/content", icon: Sparkles, label: "Content AI" },
 ];
 
 interface DashboardLayoutProps {
@@ -29,6 +36,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { profile, signOut } = useAuth();
+  const { credits, plan } = useCredits();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -112,14 +120,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10">
+              <Coins className="w-4 h-4 text-primary" />
+              <span className="font-medium text-primary">{credits}</span>
+            </div>
             <span className={cn(
               "px-3 py-1 rounded-full text-xs font-medium uppercase",
-              profile?.plan === "business" && "bg-juris-warning/20 text-juris-warning",
-              profile?.plan === "pro" && "bg-primary/20 text-primary",
-              profile?.plan === "free" && "bg-muted text-muted-foreground"
+              plan === "business" && "bg-juris-warning/20 text-juris-warning",
+              plan === "pro" && "bg-primary/20 text-primary",
+              plan === "basico" && "bg-juris-success/20 text-juris-success",
+              plan === "free" && "bg-muted text-muted-foreground"
             )}>
-              {profile?.plan || "free"}
+              {plan}
             </span>
           </div>
         </header>

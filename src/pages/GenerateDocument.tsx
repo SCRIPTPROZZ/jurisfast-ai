@@ -6,18 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Sparkles, Copy, Check } from "lucide-react";
+import { Loader2, Sparkles, Copy, Check, Coins } from "lucide-react";
 
 const documentTypes = [
-  { value: "peticao-inicial", label: "Petição Inicial" },
-  { value: "contestacao", label: "Contestação" },
-  { value: "recurso", label: "Recurso" },
-  { value: "parecer", label: "Parecer Jurídico" },
-  { value: "contrato", label: "Contrato" },
-  { value: "notificacao", label: "Notificação Extrajudicial" },
+  { value: "peticao-inicial", label: "Petição Inicial", credits: CREDIT_COSTS.generate_simple },
+  { value: "contestacao", label: "Contestação", credits: CREDIT_COSTS.generate_simple },
+  { value: "recurso", label: "Recurso", credits: CREDIT_COSTS.legal_review },
+  { value: "parecer", label: "Parecer Jurídico", credits: CREDIT_COSTS.legal_review },
+  { value: "contrato", label: "Contrato", credits: CREDIT_COSTS.generate_simple },
+  { value: "notificacao", label: "Notificação Extrajudicial", credits: CREDIT_COSTS.generate_simple },
+  { value: "peticao-longa", label: "Petição Longa (Completa)", credits: CREDIT_COSTS.long_petition },
 ];
 
 const legalAreas = [
@@ -33,7 +34,7 @@ const legalAreas = [
 
 export default function GenerateDocument() {
   const { toast } = useToast();
-  const { incrementUsage, canPerformAction } = useUsageLimits();
+  const { credits, canAfford, debitCredits } = useCredits();
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(false);
@@ -45,6 +46,15 @@ export default function GenerateDocument() {
   });
   const [result, setResult] = useState("");
 
+  const selectedDocType = documentTypes.find(d => d.value === formData.type);
+  const creditCost = selectedDocType?.credits || CREDIT_COSTS.generate_simple;
+
+  const getActionType = () => {
+    if (formData.type === "peticao-longa") return "long_petition";
+    if (["recurso", "parecer"].includes(formData.type)) return "legal_review";
+    return "generate_simple";
+  };
+
   const handleGenerate = async () => {
     if (!formData.type || !formData.area || !formData.input) {
       toast({
@@ -55,10 +65,12 @@ export default function GenerateDocument() {
       return;
     }
 
-    if (!await canPerformAction()) {
+    const actionType = getActionType();
+    
+    if (!canAfford(actionType)) {
       toast({
-        title: "Limite atingido",
-        description: "Você atingiu seu limite diário. Faça upgrade para continuar.",
+        title: "Créditos insuficientes",
+        description: `Esta ação requer ${creditCost} crédito(s). Você tem ${credits}.`,
         variant: "destructive",
       });
       return;
@@ -70,7 +82,7 @@ export default function GenerateDocument() {
     try {
       const response = await supabase.functions.invoke("generate-document", {
         body: {
-          type: documentTypes.find(d => d.value === formData.type)?.label,
+          type: selectedDocType?.label,
           area: legalAreas.find(a => a.value === formData.area)?.label,
           input: formData.input,
         },
@@ -92,8 +104,8 @@ export default function GenerateDocument() {
         output: output,
       });
 
-      // Increment usage
-      await incrementUsage();
+      // Debit credits
+      await debitCredits(actionType, `Geração: ${selectedDocType?.label}`);
 
       toast({
         title: "Documento gerado!",
@@ -124,11 +136,17 @@ export default function GenerateDocument() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Gerar Documento</h1>
-          <p className="text-muted-foreground">
-            Crie documentos jurídicos profissionais com inteligência artificial
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Gerar Documento</h1>
+            <p className="text-muted-foreground">
+              Crie documentos jurídicos profissionais com inteligência artificial
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/20 text-primary text-sm">
+            <Coins className="w-4 h-4" />
+            {credits} créditos
+          </div>
         </div>
 
         <Card variant="elevated">
@@ -152,7 +170,12 @@ export default function GenerateDocument() {
                   <SelectContent>
                     {documentTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                        <div className="flex items-center justify-between w-full">
+                          <span>{type.label}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            ({type.credits} créd.)
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -204,7 +227,7 @@ export default function GenerateDocument() {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Gerar com IA
+                  Gerar com IA ({creditCost} crédito{creditCost > 1 ? "s" : ""})
                 </>
               )}
             </Button>

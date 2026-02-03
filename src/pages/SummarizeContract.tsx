@@ -6,20 +6,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { useCredits, CREDIT_COSTS } from "@/hooks/useCredits";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, FileSearch, Copy, Check, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Loader2, FileSearch, Copy, Check, AlertTriangle, CheckCircle, Info, Coins } from "lucide-react";
 
 const summaryTypes = [
-  { value: "simples", label: "Resumo Simples", description: "Visão geral do documento" },
-  { value: "tecnico", label: "Resumo Técnico", description: "Análise detalhada de cláusulas" },
-  { value: "riscos", label: "Análise de Riscos", description: "Identificação de cláusulas problemáticas" },
+  { value: "simples", label: "Resumo Simples", description: "Visão geral do documento", credits: CREDIT_COSTS.generate_simple },
+  { value: "tecnico", label: "Resumo Técnico", description: "Análise detalhada de cláusulas", credits: CREDIT_COSTS.legal_review },
+  { value: "riscos", label: "Análise de Riscos", description: "Identificação de cláusulas problemáticas", credits: CREDIT_COSTS.legal_review },
 ];
 
 export default function SummarizeContract() {
   const { toast } = useToast();
-  const { incrementUsage, canPerformAction } = useUsageLimits();
+  const { credits, canAfford, debitCredits } = useCredits();
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(false);
@@ -34,6 +34,14 @@ export default function SummarizeContract() {
     alerts: string[];
   } | null>(null);
 
+  const selectedType = summaryTypes.find(t => t.value === formData.summaryType);
+  const creditCost = selectedType?.credits || CREDIT_COSTS.generate_simple;
+
+  const getActionType = () => {
+    if (["tecnico", "riscos"].includes(formData.summaryType)) return "legal_review";
+    return "generate_simple";
+  };
+
   const handleSummarize = async () => {
     if (!formData.text || !formData.summaryType) {
       toast({
@@ -44,10 +52,12 @@ export default function SummarizeContract() {
       return;
     }
 
-    if (!await canPerformAction()) {
+    const actionType = getActionType();
+
+    if (!canAfford(actionType)) {
       toast({
-        title: "Limite atingido",
-        description: "Você atingiu seu limite diário. Faça upgrade para continuar.",
+        title: "Créditos insuficientes",
+        description: `Esta ação requer ${creditCost} crédito(s). Você tem ${credits}.`,
         variant: "destructive",
       });
       return;
@@ -85,8 +95,8 @@ export default function SummarizeContract() {
         alerts: data.alerts,
       });
 
-      // Increment usage
-      await incrementUsage();
+      // Debit credits
+      await debitCredits(actionType, `Resumo: ${selectedType?.label}`);
 
       toast({
         title: "Contrato resumido!",
@@ -119,11 +129,17 @@ export default function SummarizeContract() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Resumir Contrato</h1>
-          <p className="text-muted-foreground">
-            Analise e resuma contratos extensos com inteligência artificial
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Resumir Contrato</h1>
+            <p className="text-muted-foreground">
+              Analise e resuma contratos extensos com inteligência artificial
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/20 text-primary text-sm">
+            <Coins className="w-4 h-4" />
+            {credits} créditos
+          </div>
         </div>
 
         <Card variant="elevated">
@@ -146,9 +162,14 @@ export default function SummarizeContract() {
                 <SelectContent>
                   {summaryTypes.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
-                      <div>
-                        <p className="font-medium">{type.label}</p>
-                        <p className="text-xs text-muted-foreground">{type.description}</p>
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <p className="font-medium">{type.label}</p>
+                          <p className="text-xs text-muted-foreground">{type.description}</p>
+                        </div>
+                        <span className="ml-4 text-xs text-muted-foreground">
+                          ({type.credits} créd.)
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -181,7 +202,7 @@ export default function SummarizeContract() {
               ) : (
                 <>
                   <FileSearch className="w-5 h-5" />
-                  Resumir documento
+                  Resumir documento ({creditCost} crédito{creditCost > 1 ? "s" : ""})
                 </>
               )}
             </Button>

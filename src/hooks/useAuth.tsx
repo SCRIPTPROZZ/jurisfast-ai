@@ -6,7 +6,10 @@ interface Profile {
   id: string;
   user_id: string;
   name: string;
-  plan: "free" | "pro" | "business";
+  plan: "free" | "basico" | "pro" | "business";
+  credits: number;
+  has_content_module: boolean;
+  credits_reset_at: string;
   created_at: string;
   updated_at: string;
 }
