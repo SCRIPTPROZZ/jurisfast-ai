@@ -97,6 +97,16 @@ export default function AnalyzePDF() {
     setResult(null);
 
     try {
+      // CRITICAL: Debit credits BEFORE calling AI - server-side first
+      const debitSuccess = await debitCredits("pdf_analysis", `Análise de PDF: ${pdfFile.name}`);
+      
+      if (!debitSuccess) {
+        // Credits were not debited (insufficient or error)
+        setLoading(false);
+        return;
+      }
+
+      // Now call the AI service
       const response = await supabase.functions.invoke("analyze-pdf", {
         body: {
           pdfData: pdfText,
@@ -115,9 +125,6 @@ export default function AnalyzePDF() {
         highlights: data.highlights || [],
         alerts: data.alerts || [],
       });
-
-      // Debit credits after successful analysis
-      await debitCredits("pdf_analysis", `Análise de PDF: ${pdfFile.name}`);
 
       toast({
         title: "Análise concluída!",

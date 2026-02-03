@@ -67,6 +67,16 @@ export default function SummarizeContract() {
     setResult(null);
 
     try {
+      // CRITICAL: Debit credits BEFORE calling AI - server-side first
+      const debitSuccess = await debitCredits(actionType, `Resumo: ${selectedType?.label}`);
+      
+      if (!debitSuccess) {
+        // Credits were not debited (insufficient or error)
+        setLoading(false);
+        return;
+      }
+
+      // Now call the AI service
       const response = await supabase.functions.invoke("summarize-contract", {
         body: {
           text: formData.text,
@@ -94,9 +104,6 @@ export default function SummarizeContract() {
         key_points: data.keyPoints,
         alerts: data.alerts,
       });
-
-      // Debit credits
-      await debitCredits(actionType, `Resumo: ${selectedType?.label}`);
 
       toast({
         title: "Contrato resumido!",

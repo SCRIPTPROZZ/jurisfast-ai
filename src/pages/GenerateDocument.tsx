@@ -80,6 +80,16 @@ export default function GenerateDocument() {
     setResult("");
 
     try {
+      // CRITICAL: Debit credits BEFORE calling AI - server-side first
+      const debitSuccess = await debitCredits(actionType, `Geração: ${selectedDocType?.label}`);
+      
+      if (!debitSuccess) {
+        // Credits were not debited (insufficient or error)
+        setLoading(false);
+        return;
+      }
+
+      // Now call the AI service
       const response = await supabase.functions.invoke("generate-document", {
         body: {
           type: selectedDocType?.label,
@@ -104,9 +114,6 @@ export default function GenerateDocument() {
         output: output,
       });
 
-      // Debit credits
-      await debitCredits(actionType, `Geração: ${selectedDocType?.label}`);
-
       toast({
         title: "Documento gerado!",
         description: "Seu documento foi criado e salvo no histórico.",
@@ -118,6 +125,8 @@ export default function GenerateDocument() {
         description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
         variant: "destructive",
       });
+      // Note: Credits are NOT refunded on AI error - this is intentional
+      // The credits were consumed for the attempt
     } finally {
       setLoading(false);
     }
