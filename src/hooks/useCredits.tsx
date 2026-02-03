@@ -3,89 +3,106 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 
-// Credit costs for different actions
+// Credit costs for different actions - server determines actual costs
 export const CREDIT_COSTS = {
-  generate_simple: 1,      // Geração simples de peça
-  legal_review: 2,         // Revisão jurídica
-  pdf_analysis: 3,         // Análise de PDF
-  long_petition: 5,        // Petição longa
+  generate_simple: 1,
+  legal_review: 2,
+  pdf_analysis: 3,
+  long_petition: 5,
 } as const;
 
-// Plan configurations - FREE is daily, others are monthly
-export const PLAN_CONFIG = {
+// Plan configurations - these are read-only display values
+// Actual credit logic is handled server-side via RPC functions
+const PLAN_CREDITS = {
+  free: 5,      // per DAY
+  basico: 450,  // per MONTH
+  basic: 450,   // alias for basico
+  pro: 1450,    // per MONTH
+  business: 3450, // per MONTH
+} as const;
+
+const PLAN_FEATURES = {
   free: {
-    credits: 5,           // 5 per DAY
-    resetInterval: 'day',
-    features: {
-      generateSimple: true,
-      legalReview: true,
-      historyDays: 1,
-      exportWord: false,
-      exportPdf: false,
-      pdfAnalysis: false,
-      templates: false,
-      multiUser: false,
-      customLogo: false,
-      clientOrganization: false,
-      priorityGeneration: false,
-    }
+    historyDays: 1,
+    exportWord: false,
+    exportPdf: false,
+    pdfAnalysis: false,
+    templates: false,
+    multiUser: false,
+    customLogo: false,
+    clientOrganization: false,
+    priorityGeneration: false,
   },
   basico: {
-    credits: 450,         // 450 per MONTH
-    resetInterval: 'month',
-    features: {
-      generateSimple: true,
-      legalReview: true,
-      historyDays: 7,
-      exportWord: false,
-      exportPdf: false,
-      pdfAnalysis: false,
-      templates: false,
-      multiUser: false,
-      customLogo: false,
-      clientOrganization: false,
-      priorityGeneration: false,
-    }
+    historyDays: 7,
+    exportWord: false,
+    exportPdf: false,
+    pdfAnalysis: false,
+    templates: false,
+    multiUser: false,
+    customLogo: false,
+    clientOrganization: false,
+    priorityGeneration: false,
   },
   pro: {
-    credits: 1450,        // 1450 per MONTH
-    resetInterval: 'month',
-    features: {
-      generateSimple: true,
-      legalReview: true,
-      historyDays: Infinity,
-      exportWord: true,
-      exportPdf: true,
-      pdfAnalysis: true,
-      templates: true,
-      multiUser: false,
-      customLogo: false,
-      clientOrganization: false,
-      priorityGeneration: true,
-    }
+    historyDays: Infinity,
+    exportWord: true,
+    exportPdf: true,
+    pdfAnalysis: true,
+    templates: true,
+    multiUser: false,
+    customLogo: false,
+    clientOrganization: false,
+    priorityGeneration: true,
   },
   business: {
-    credits: 3450,        // 3450 per MONTH
-    resetInterval: 'month',
-    features: {
-      generateSimple: true,
-      legalReview: true,
-      historyDays: Infinity,
-      exportWord: true,
-      exportPdf: true,
-      pdfAnalysis: true,
-      templates: true,
-      multiUser: true,
-      customLogo: true,
-      clientOrganization: true,
-      priorityGeneration: true,
-    }
+    historyDays: Infinity,
+    exportWord: true,
+    exportPdf: true,
+    pdfAnalysis: true,
+    templates: true,
+    multiUser: true,
+    customLogo: true,
+    clientOrganization: true,
+    priorityGeneration: true,
   },
-};
+} as const;
 
-export type PlanType = keyof typeof PLAN_CONFIG;
+// Generate PLAN_CONFIG from the separate objects
+export const PLAN_CONFIG = Object.fromEntries(
+  Object.entries(PLAN_FEATURES).map(([plan, features]) => [
+    plan,
+    {
+      credits: PLAN_CREDITS[plan as keyof typeof PLAN_CREDITS] ?? 5,
+      resetInterval: plan === 'free' ? 'day' : 'month',
+      features: {
+        generateSimple: true,
+        legalReview: true,
+        ...features,
+      },
+    },
+  ])
+) as Record<string, {
+  credits: number;
+  resetInterval: string;
+  features: {
+    generateSimple: boolean;
+    legalReview: boolean;
+    historyDays: number;
+    exportWord: boolean;
+    exportPdf: boolean;
+    pdfAnalysis: boolean;
+    templates: boolean;
+    multiUser: boolean;
+    customLogo: boolean;
+    clientOrganization: boolean;
+    priorityGeneration: boolean;
+  };
+}>;
+
+export type PlanType = 'free' | 'basico' | 'basic' | 'pro' | 'business';
 export type ActionType = keyof typeof CREDIT_COSTS;
-export type FeatureType = keyof typeof PLAN_CONFIG.free.features;
+export type FeatureType = keyof typeof PLAN_FEATURES.free;
 
 export function useCredits() {
   const { user, profile, refreshProfile } = useAuth();
@@ -144,12 +161,16 @@ export function useCredits() {
   }, [profile]);
 
   const getPlan = useCallback((): PlanType => {
-    return (profile?.plan as PlanType) || "free";
+    const plan = profile?.plan as PlanType;
+    // Normalize 'basic' to 'basico' for consistency
+    if (plan === 'basic') return 'basico';
+    return plan || "free";
   }, [profile]);
 
   const hasFeature = useCallback((feature: FeatureType): boolean => {
     const plan = getPlan();
-    const featureValue = PLAN_CONFIG[plan]?.features[feature];
+    const planConfig = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
+    const featureValue = planConfig?.features?.[feature];
     return typeof featureValue === 'boolean' ? featureValue : featureValue !== undefined;
   }, [getPlan]);
 
@@ -350,6 +371,19 @@ export function useCredits() {
     return plan === 'free' ? 'Reset diário' : 'Reset mensal';
   }, [getPlan]);
 
+  // Get plan display name
+  const getPlanDisplayName = useCallback(() => {
+    const plan = getPlan();
+    const names: Record<string, string> = {
+      free: 'Free',
+      basico: 'Básico',
+      basic: 'Básico',
+      pro: 'Pro',
+      business: 'Business',
+    };
+    return names[plan] || 'Free';
+  }, [getPlan]);
+
   return {
     loading,
     recalculating,
@@ -361,7 +395,8 @@ export function useCredits() {
     extraCredits: getExtraCredits(),
     // Plan info
     plan: getPlan(),
-    planConfig: PLAN_CONFIG[getPlan()],
+    planConfig: PLAN_CONFIG[getPlan()] || PLAN_CONFIG.free,
+    planDisplayName: getPlanDisplayName(),
     // Reset info
     resetDate: getResetDate(),
     timeUntilReset: getTimeUntilReset(),
@@ -378,5 +413,6 @@ export function useCredits() {
     // Constants
     creditCosts: CREDIT_COSTS,
     allPlanConfigs: PLAN_CONFIG,
+    planCredits: PLAN_CREDITS,
   };
 }
