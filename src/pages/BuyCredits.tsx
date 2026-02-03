@@ -36,7 +36,7 @@ const creditPackages = [
 ];
 
 export default function BuyCredits() {
-  const { creditsBalance, monthlyCredits, extraCredits, plan, daysUntilReset } = useCredits();
+  const { creditsBalance, monthlyCredits, extraCredits, plan, timeUntilReset, resetLabel } = useCredits();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -88,8 +88,8 @@ export default function BuyCredits() {
             </div>
             <p className="text-sm text-muted-foreground">
               Plano atual: <span className="font-medium capitalize">{plan}</span>
-              {daysUntilReset !== null && (
-                <span className="ml-2">• Reset em {daysUntilReset} dias</span>
+              {timeUntilReset && (
+                <span className="ml-2">• {resetLabel} em {timeUntilReset}</span>
               )}
             </p>
           </CardContent>

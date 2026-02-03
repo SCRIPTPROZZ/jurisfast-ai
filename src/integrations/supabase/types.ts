@@ -278,7 +278,9 @@ export type Database = {
         Returns: Json
       }
       get_plan_credits: { Args: { p_plan: string }; Returns: number }
-      reset_monthly_credits: { Args: never; Returns: undefined }
+      get_plan_reset_interval: { Args: { p_plan: string }; Returns: unknown }
+      recalculate_credits: { Args: { p_user_id: string }; Returns: Json }
+      reset_all_credits: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

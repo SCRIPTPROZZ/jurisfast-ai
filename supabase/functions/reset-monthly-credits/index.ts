@@ -12,33 +12,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify authorization (use service role for cron jobs)
-    const authHeader = req.headers.get('Authorization');
-    const expectedKey = Deno.env.get('CRON_SECRET') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    // For cron jobs, we can use a simple secret or service role key
-    if (!authHeader || !authHeader.includes(expectedKey?.slice(0, 20) || '')) {
-      // If no valid auth, check if it's from Supabase internal cron
-      const isInternalCron = req.headers.get('x-supabase-cron') === 'true';
-      if (!isInternalCron && !authHeader?.includes('Bearer')) {
-        console.log('Unauthorized request to reset-monthly-credits');
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Starting monthly credit reset...');
+    console.log('Starting credit reset check...');
 
-    // Call the database function to reset credits
-    const { error } = await supabase.rpc('reset_monthly_credits');
+    // Call the database function to reset credits for users whose reset date has passed
+    // This handles both daily (free) and monthly (paid) resets
+    const { error } = await supabase.rpc('reset_all_credits');
 
     if (error) {
       console.error('Error resetting credits:', error);
@@ -49,18 +33,19 @@ Deno.serve(async (req) => {
     }
 
     // Get count of users that were reset for logging
-    const { data: resetCount } = await supabase
+    const { count } = await supabase
       .from('credit_action_logs')
       .select('id', { count: 'exact', head: true })
       .eq('action_type', 'reset')
       .gte('created_at', new Date(Date.now() - 60000).toISOString());
 
-    console.log(`Monthly credit reset completed. Users reset: ${resetCount || 'unknown'}`);
+    console.log(`Credit reset completed. Users reset: ${count || 0}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Monthly credits reset completed',
+        message: 'Credit reset check completed',
+        users_reset: count || 0,
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
