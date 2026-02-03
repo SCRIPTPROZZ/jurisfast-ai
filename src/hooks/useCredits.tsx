@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
@@ -11,10 +11,11 @@ export const CREDIT_COSTS = {
   long_petition: 5,        // Petição longa
 } as const;
 
-// Plan configurations with monthly credits
+// Plan configurations - FREE is daily, others are monthly
 export const PLAN_CONFIG = {
   free: {
-    monthlyCredits: 150,
+    credits: 5,           // 5 per DAY
+    resetInterval: 'day',
     features: {
       generateSimple: true,
       legalReview: true,
@@ -30,7 +31,8 @@ export const PLAN_CONFIG = {
     }
   },
   basico: {
-    monthlyCredits: 450,
+    credits: 450,         // 450 per MONTH
+    resetInterval: 'month',
     features: {
       generateSimple: true,
       legalReview: true,
@@ -46,7 +48,8 @@ export const PLAN_CONFIG = {
     }
   },
   pro: {
-    monthlyCredits: 1450,
+    credits: 1450,        // 1450 per MONTH
+    resetInterval: 'month',
     features: {
       generateSimple: true,
       legalReview: true,
@@ -62,7 +65,8 @@ export const PLAN_CONFIG = {
     }
   },
   business: {
-    monthlyCredits: 3450,
+    credits: 3450,        // 3450 per MONTH
+    resetInterval: 'month',
     features: {
       generateSimple: true,
       legalReview: true,
@@ -87,6 +91,42 @@ export function useCredits() {
   const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+
+  // Recalculate credits on mount/login (server-side check for reset)
+  const recalculateCredits = useCallback(async () => {
+    if (!user || recalculating) return;
+    
+    setRecalculating(true);
+    try {
+      const { data, error } = await supabase.rpc("recalculate_credits", {
+        p_user_id: user.id,
+      });
+
+      if (error) {
+        console.error("Error recalculating credits:", error);
+        return;
+      }
+
+      const result = data as { success: boolean; reset_performed?: boolean };
+      
+      // If a reset was performed, refresh the profile to get new values
+      if (result.success && result.reset_performed) {
+        await refreshProfile();
+      }
+    } catch (error) {
+      console.error("Error in recalculateCredits:", error);
+    } finally {
+      setRecalculating(false);
+    }
+  }, [user, refreshProfile, recalculating]);
+
+  // Call recalculate on mount when user is available
+  useEffect(() => {
+    if (user && profile) {
+      recalculateCredits();
+    }
+  }, [user?.id]); // Only run when user ID changes (login)
 
   // Get total credits balance
   const getCreditsBalance = useCallback(() => {
@@ -284,18 +324,35 @@ export function useCredits() {
     return new Date(profile.credits_reset_at);
   }, [profile]);
 
-  // Days until reset
-  const getDaysUntilReset = useCallback(() => {
+  // Time until reset (formatted string)
+  const getTimeUntilReset = useCallback(() => {
     const resetDate = getResetDate();
     if (!resetDate) return null;
+    
     const now = new Date();
-    const diffTime = resetDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
+    const diffMs = resetDate.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return 'Agora';
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) {
+      return `${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+    }
+    
+    return `${diffHours} hora${diffHours > 1 ? 's' : ''}`;
   }, [getResetDate]);
+
+  // Get reset label based on plan
+  const getResetLabel = useCallback(() => {
+    const plan = getPlan();
+    return plan === 'free' ? 'Reset diário' : 'Reset mensal';
+  }, [getPlan]);
 
   return {
     loading,
+    recalculating,
     // Total balance
     credits: getCreditsBalance(),
     creditsBalance: getCreditsBalance(),
@@ -307,7 +364,8 @@ export function useCredits() {
     planConfig: PLAN_CONFIG[getPlan()],
     // Reset info
     resetDate: getResetDate(),
-    daysUntilReset: getDaysUntilReset(),
+    timeUntilReset: getTimeUntilReset(),
+    resetLabel: getResetLabel(),
     // Feature checks
     hasFeature,
     canAfford,
@@ -315,6 +373,7 @@ export function useCredits() {
     debitCredits,
     addExtraCredits,
     applyPlanCredits,
+    recalculateCredits,
     hasContentModule,
     // Constants
     creditCosts: CREDIT_COSTS,

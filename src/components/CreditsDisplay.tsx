@@ -21,8 +21,8 @@ export function CreditsDisplay({ showUpgrade = true, compact = false, showBreakd
     creditsBalance, 
     monthlyCredits, 
     extraCredits, 
-    plan, 
-    daysUntilReset 
+    timeUntilReset,
+    resetLabel
   } = useCredits();
 
   const isLow = creditsBalance <= 50;
@@ -48,8 +48,8 @@ export function CreditsDisplay({ showUpgrade = true, compact = false, showBreakd
               <p className="font-medium">Detalhamento de créditos:</p>
               <p>📅 Mensal: {monthlyCredits}</p>
               <p>💎 Extra: {extraCredits}</p>
-              {daysUntilReset !== null && (
-                <p className="text-muted-foreground">Reset em {daysUntilReset} dias</p>
+              {timeUntilReset && (
+                <p className="text-muted-foreground">{resetLabel} em {timeUntilReset}</p>
               )}
             </div>
           </TooltipContent>
@@ -107,10 +107,10 @@ export function CreditsDisplay({ showUpgrade = true, compact = false, showBreakd
             <span className="text-muted-foreground">Extra:</span>
             <span className="ml-1 font-medium text-primary">{extraCredits}</span>
           </div>
-          {daysUntilReset !== null && (
+          {timeUntilReset && (
             <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
               <Calendar className="w-3 h-3" />
-              <span>Reset em {daysUntilReset} dias</span>
+              <span>{resetLabel} em {timeUntilReset}</span>
             </div>
           )}
         </div>
