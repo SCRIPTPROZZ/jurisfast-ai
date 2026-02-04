@@ -6,8 +6,8 @@ export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="container px-4">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/">
+        <div className="flex items-center justify-between h-16 md:h-18">
+          <Link to="/" className="flex-shrink-0">
             <Logo size="sm" />
           </Link>
 
@@ -17,11 +17,11 @@ export function Header() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="sm">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Button asChild variant="ghost" size="sm" className="px-3 md:px-4">
               <Link to="/auth?mode=login">Entrar</Link>
             </Button>
-            <Button asChild variant="default" size="sm">
+            <Button asChild variant="default" size="sm" className="px-3 md:px-4">
               <Link to="/auth?mode=signup">Criar conta</Link>
             </Button>
           </div>
