@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import jurisfastLogo from "@/assets/jurisfast-logo.png";
+import jurisfastLogo from "@/assets/jurisfastai.png";
+
 
 export function Hero() {
   return (
