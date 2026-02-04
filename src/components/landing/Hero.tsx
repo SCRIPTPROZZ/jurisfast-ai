@@ -20,10 +20,9 @@ export function Hero() {
              <img
                src={jurisfastLogo}
                alt="JurisFast AI"
+               className="h-40 md:h-48 lg:h-56 w-auto object-contain scale-150"
                style={{
-                 height: "220px",
-                 border: "3px solid red",
-                 background: "#fff",
+                 filter: "drop-shadow(0 0 20px rgba(59,130,246,.35))",
                }}
                />
             </div>
