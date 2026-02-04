@@ -18,13 +18,20 @@ export function Hero() {
             {/* Logo central */}
             <div className="mb-6 animate-fade-in">
              <img
-               src={jurisfastLogo}
-               alt="JurisFast AI"
-               className="h-40 md:h-48 lg:h-56 w-auto object-contain scale-150"
-               style={{
-                 filter: "drop-shadow(0 0 20px rgba(59,130,246,.35))",
-               }}
-               />
+  src={jurisfastLogo}
+  alt="JurisFast AI"
+  className="
+    h-32 
+    sm:h-36 
+    md:h-40 
+    lg:h-44 
+    w-auto 
+    object-contain 
+    mb-6
+    drop-shadow-[0_0_25px_rgba(59,130,246,0.35)]
+  "
+/>
+
             </div>
 
             {/* Badge */}
