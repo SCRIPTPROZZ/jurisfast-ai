@@ -1,4 +1,5 @@
-import jurisfastLogo from "@/assets/jurisfast-logo.png";
+import jurisfastLogo from "@/assets/jurisfastai.png";
+
 
 interface LogoProps {
   className?: string;
