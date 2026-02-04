@@ -12,7 +12,7 @@ export function Hero() {
       <div className="absolute bottom-1/4 right-1/4 w-32 md:w-64 h-32 md:h-64 bg-primary/10 rounded-full blur-3xl opacity-30 pointer-events-none" />
 
       {/* Content container with proper spacing from header */}
-      <div className="relative z-10 w-full pt-[72px] md:pt-[80px] pb-8 md:pb-12">
+      <div className="relative z-10 w-full pt-10 md:pt-14 pb-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             {/* Logo */}
@@ -22,8 +22,6 @@ export function Hero() {
               alt="JurisFast AI"
               className="w-56 sm:w-72 md:w-80 lg:w-96 h-auto object-contain mx-auto"
               />
-
-
             </div>
 
             {/* Badge */}
