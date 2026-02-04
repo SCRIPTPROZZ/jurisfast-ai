@@ -16,11 +16,15 @@ export function Hero() {
           <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-center">
             {/* Logo central */}
             <div className="mb-6 animate-fade-in">
-              <img
-                src={jurisfastLogo}
-                alt="JurisFast AI"
-                className="h-20 md:h-24 w-auto object-contain"
-              />
+             <img
+               src={jurisfastLogo}
+               alt="JurisFast AI"
+               style={{
+                 height: "220px",
+                 border: "3px solid red",
+                 background: "#fff",
+               }}
+               />
             </div>
 
             {/* Badge */}
