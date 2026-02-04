@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import jurisfastLogo from "@/assets/jurisfast-logo.png";
 
 export function Hero() {
   return (
@@ -14,6 +15,15 @@ export function Hero() {
       <div className="relative z-10 w-full pt-[72px] md:pt-[80px] pb-8 md:pb-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+            {/* Logo */}
+            <div className="mb-6 animate-fade-in">
+              <img 
+                src={jurisfastLogo} 
+                alt="JurisFast AI" 
+                className="h-16 md:h-20 w-auto"
+              />
+            </div>
+
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6 animate-fade-in">
               <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
