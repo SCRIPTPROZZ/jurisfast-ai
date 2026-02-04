@@ -62,7 +62,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
       >
         <div className="p-6 border-b border-sidebar-border">
-          <Logo size="sm" />
+          <Logo />
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
