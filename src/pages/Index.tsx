@@ -12,8 +12,17 @@ import { Navigate } from "react-router-dom";
 const LandingPage = () => {
   const { user, loading } = useAuth();
 
+  // Show nothing while checking auth to prevent flash
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // Redirect to dashboard if already logged in
-  if (!loading && user) {
+  if (user) {
     return <Navigate to="/dashboard" replace />;
   }
 
