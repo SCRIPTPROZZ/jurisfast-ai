@@ -5,6 +5,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Get aspect ratio based on content type
+function getAspectRatio(contentType: string): string {
+  switch (contentType) {
+    case "reels":
+    case "stories":
+      return "9:16"; // Vertical
+    case "carrossel":
+    case "post":
+      return "1:1"; // Square
+    case "linkedin":
+      return "16:9"; // Horizontal
+    default:
+      return "1:1";
+  }
+}
+
+// Get image prompt based on content type and topic
+function getImagePrompt(contentType: string, topic: string): string {
+  const baseStyle = "Professional legal/law firm style, clean corporate design, blue (#2563EB) and white color scheme, modern minimalist typography, high quality, suitable for social media";
+  
+  const typeSpecific: Record<string, string> = {
+    reels: "vertical cover image for Instagram Reels video",
+    carrossel: "carousel slide cover image for Instagram",
+    post: "square image for Instagram feed post",
+    stories: "vertical image for Instagram Stories",
+    linkedin: "professional horizontal banner for LinkedIn post",
+  };
+
+  const format = typeSpecific[contentType] || "social media image";
+  
+  return `Create a ${format} about: ${topic}. ${baseStyle}. Include subtle legal icons like scales of justice, gavel, or legal documents as decorative elements. The image should convey trust, professionalism, and expertise. Ultra high resolution.`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -95,7 +128,8 @@ Gere o conteúdo completo, pronto para usar. Seja criativo e engajador.`;
 
     console.log(`Generating ${contentType} content about: ${topic}`);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Generate text content
+    const textResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -110,18 +144,18 @@ Gere o conteúdo completo, pronto para usar. Seja criativo e engajador.`;
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+    if (!textResponse.ok) {
+      const errorText = await textResponse.text();
+      console.error("AI Gateway error (text):", textResponse.status, errorText);
       
-      if (response.status === 429) {
+      if (textResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
-      if (response.status === 402) {
+      if (textResponse.status === 402) {
         return new Response(
           JSON.stringify({ error: "Créditos insuficientes. Entre em contato com o suporte." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -129,18 +163,66 @@ Gere o conteúdo completo, pronto para usar. Seja criativo e engajador.`;
       }
 
       return new Response(
-        JSON.stringify({ error: "Erro ao gerar conteúdo" }),
+        JSON.stringify({ error: "Erro ao gerar conteúdo de texto" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const textData = await textResponse.json();
+    const content = textData.choices?.[0]?.message?.content || "";
 
-    console.log("Content generated successfully");
+    console.log("Text content generated successfully");
+
+    // Generate image
+    const aspectRatio = getAspectRatio(contentType);
+    const imagePrompt = getImagePrompt(contentType, topic);
+
+    console.log(`Generating image with aspect ratio ${aspectRatio}`);
+
+    let imageUrl = null;
+
+    try {
+      const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [
+            { role: "user", content: `${imagePrompt} Aspect ratio: ${aspectRatio}.` },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json();
+        imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
+        
+        if (imageUrl) {
+          console.log("Image generated successfully");
+        } else {
+          console.log("No image URL in response");
+        }
+      } else {
+        const imageError = await imageResponse.text();
+        console.error("Image generation failed:", imageResponse.status, imageError);
+        // Continue without image - don't fail the whole request
+      }
+    } catch (imageError) {
+      console.error("Error generating image:", imageError);
+      // Continue without image
+    }
 
     return new Response(
-      JSON.stringify({ content }),
+      JSON.stringify({ 
+        content,
+        imageUrl,
+        aspectRatio,
+        contentType 
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
