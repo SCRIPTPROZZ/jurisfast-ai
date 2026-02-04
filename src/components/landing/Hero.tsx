@@ -15,7 +15,7 @@ export function Hero() {
       {/* Content container with proper spacing from header */}
      <div className="relative z-10 w-full">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+          <div className="flex flex-col items-center text-center max-w-4xl mx-auto min-h-[70vh] justify-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6 animate-fade-in">
               <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
