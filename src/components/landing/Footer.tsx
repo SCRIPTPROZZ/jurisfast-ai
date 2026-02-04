@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="border-t border-border bg-card/50">
       <div className="container px-4 py-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <Logo size="sm" />
+          <Logo />
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-juris-warning/10 px-4 py-2 rounded-lg">
             <AlertTriangle className="w-4 h-4 text-juris-warning" />

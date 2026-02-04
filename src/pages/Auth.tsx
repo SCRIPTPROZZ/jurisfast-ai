@@ -163,7 +163,7 @@ export default function AuthPage() {
         <Card variant="elevated" className="w-full">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <Logo size="md" />
+              <Logo />
             </div>
             <CardTitle className="text-2xl">
               {mode === "signup" ? "Criar conta" : "Bem-vindo de volta"}
