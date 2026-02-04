@@ -5,7 +5,8 @@ import jurisfastLogo from "@/assets/jurisfast-logo.png";
 
 export function Hero() {
   return (
-    <section className="relative w-full flex flex-col items-center justify-center overflow-hidden py-24">
+    <section className="relative w-full flex flex-col items-center justify-center overflow-hidden pt-32 pb-24">
+
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
       <div className="absolute top-1/4 left-1/4 w-48 md:w-96 h-48 md:h-96 bg-primary/20 rounded-full blur-3xl opacity-50 animate-pulse-glow pointer-events-none" />
