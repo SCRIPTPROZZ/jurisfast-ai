@@ -20,8 +20,9 @@ export function Hero() {
               <img 
                 src={jurisfastLogo} 
                 alt="JurisFast AI" 
-                className="w-128 md:w-160 lg:w-192 h-auto object-contain"
-              />
+                className="w-80 sm:w-96 md:w-[420px] lg:w-[520px] h-auto object-contain"
+                />
+
             </div>
 
             {/* Badge */}
