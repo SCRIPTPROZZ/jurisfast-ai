@@ -32,6 +32,7 @@ export function Hero() {
   "
 />
 
+
             </div>
 
             {/* Badge */}
