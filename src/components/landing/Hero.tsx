@@ -20,7 +20,7 @@ export function Hero() {
               <img 
                 src={jurisfastLogo} 
                 alt="JurisFast AI" 
-                className="h-28 md:h-36 lg:h-44 w-auto object-contain"
+                className="w-64 md:w-80 lg:w-96 h-auto object-contain"
               />
             </div>
 
