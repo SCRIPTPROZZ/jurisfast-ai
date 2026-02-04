@@ -17,11 +17,12 @@ export function Hero() {
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             {/* Logo */}
             <div className="mb-6 animate-fade-in">
-              <img 
-                src={jurisfastLogo} 
-                alt="JurisFast AI" 
-                className="w-80 sm:w-96 md:w-[420px] lg:w-[520px] h-auto object-contain"
-                />
+            <img 
+              src={jurisfastLogo} 
+              alt="JurisFast AI"
+              className="w-56 sm:w-72 md:w-80 lg:w-96 h-auto object-contain mx-auto"
+              />
+
 
             </div>
 
