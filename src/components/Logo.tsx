@@ -7,11 +7,17 @@ interface LogoProps {
 }
 
 export function Logo({ className = "", showText = true, size = "md" }: LogoProps) {
-  // Fixed pixel sizes for consistency
-  const sizeClasses = {
-    sm: "h-[30px] md:h-[40px]",   // Header: 30px mobile, 40px desktop
-    md: "h-[36px] md:h-[48px]",   // Medium usage
-    lg: "h-[42px] md:h-[56px]",   // Large usage
+  // Inline styles for guaranteed sizing
+  const sizeStyles = {
+    sm: { height: "30px" },   // Mobile default
+    md: { height: "36px" },
+    lg: { height: "42px" },
+  };
+
+  const desktopSizes = {
+    sm: 40,   // Desktop: 40px
+    md: 48,
+    lg: 56,
   };
 
   return (
@@ -19,7 +25,17 @@ export function Logo({ className = "", showText = true, size = "md" }: LogoProps
       <img 
         src={jurisfastLogo} 
         alt="JurisFast AI" 
-        className={`${sizeClasses[size]} w-auto object-contain`}
+        style={{
+          ...sizeStyles[size],
+          width: "auto",
+          display: "block",
+          objectFit: "contain",
+          maxWidth: "none",
+        }}
+        className="md:!h-[40px]"
+        onError={(e) => {
+          console.error("Logo failed to load:", jurisfastLogo);
+        }}
       />
     </div>
   );
