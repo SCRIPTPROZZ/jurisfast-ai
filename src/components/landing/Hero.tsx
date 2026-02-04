@@ -19,9 +19,9 @@ export function Hero() {
               <img
                 src={jurisfastLogo}
                 alt="JurisFast AI"
-                className="h-28 md:h-32 lg:h-36 w-auto object-contain"
-                />
-
+                className="h-20 md:h-24 w-auto object-contain"
+              />
+            </div>
 
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6 animate-fade-in">
