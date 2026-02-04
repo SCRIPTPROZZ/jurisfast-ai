@@ -16,13 +16,7 @@ export function Hero() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             {/* Logo */}
-            <div className="mb-6 animate-fade-in">
-            <img 
-              src={jurisfastLogo} 
-              alt="JurisFast AI"
-              className="w-56 sm:w-72 md:w-80 lg:w-96 h-auto object-contain mx-auto"
-              />
-            </div>
+            
 
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6 animate-fade-in">
