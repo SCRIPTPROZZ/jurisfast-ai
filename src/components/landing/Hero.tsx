@@ -15,7 +15,12 @@ export function Hero() {
 
             {/* Logo central */}
             <div className="mb-6 animate-fade-in">
-            <img src={jurisfastLogo} alt="JurisFast AI" className="\\\\n    h-20\\\\n    sm:h-24\\\\n    md:h-28\\\\n    lg:h-32\\\\n    w-auto\\\\n    max-w-[px]\\\\n    sm:max-w-[360px]\\\\n    md:max-w-[408px]\\\\n    object-contain\\\\n    mx-auto\\\\n    mb-4\\\\n    drop-shadow-[0_0_25px_rgba(59,130,246,0.35)]\\\\n  " />
+            <img
+              src={jurisfastLogo}
+              alt="JurisFast AI"
+              className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto max-w-[300px] sm:max-w-[340px] md:max-w-[408px] object-contain mx-auto mb-4 drop-shadow-[0_0_25px_rgba(59,130,246,0.35)]"
+              />
+
 
           </div>
 
