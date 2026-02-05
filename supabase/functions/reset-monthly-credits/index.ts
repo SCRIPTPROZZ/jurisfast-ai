@@ -12,6 +12,28 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // === AUTHENTICATION: Verify this is a cron job or service role call ===
+    const authHeader = req.headers.get("Authorization");
+    
+    // Check if called with service role key (cron jobs use this)
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
+    
+    // Also allow cron secret for scheduled jobs
+    const cronSecret = req.headers.get("x-cron-secret");
+    const expectedCronSecret = Deno.env.get("CRON_SECRET");
+    const isCronJob = cronSecret && expectedCronSecret && cronSecret === expectedCronSecret;
+    
+    if (!isServiceRole && !isCronJob) {
+      console.error("Unauthorized access attempt to reset-monthly-credits");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - this endpoint is for cron jobs only" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Authorized cron/service call - proceeding with credit reset");
+
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

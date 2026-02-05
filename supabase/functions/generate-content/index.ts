@@ -1,21 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const CREDITS_REQUIRED = 3;
+
 // Get aspect ratio based on content type
 function getAspectRatio(contentType: string): string {
   switch (contentType) {
     case "reels":
     case "stories":
-      return "9:16"; // Vertical
+      return "9:16";
     case "carrossel":
     case "post":
-      return "1:1"; // Square
+      return "1:1";
     case "linkedin":
-      return "16:9"; // Horizontal
+      return "16:9";
     default:
       return "1:1";
   }
@@ -44,6 +47,66 @@ serve(async (req) => {
   }
 
   try {
+    // === AUTHENTICATION ===
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("Missing or invalid Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Não autorizado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Auth error:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Não autorizado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Authenticated user: ${user.id}`);
+
+    // === SERVER-SIDE CREDIT CHECK ===
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("credits_balance, has_content_module")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error("Profile fetch error:", profileError?.message);
+      return new Response(
+        JSON.stringify({ error: "Perfil não encontrado" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if user has content module access
+    if (!profile.has_content_module) {
+      console.error("User does not have content module access");
+      return new Response(
+        JSON.stringify({ error: "Acesso ao módulo de conteúdo não autorizado" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (profile.credits_balance < CREDITS_REQUIRED) {
+      console.error(`Insufficient credits: ${profile.credits_balance} < ${CREDITS_REQUIRED}`);
+      return new Response(
+        JSON.stringify({ error: "Créditos insuficientes", required: CREDITS_REQUIRED, available: profile.credits_balance }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // === PARSE REQUEST ===
     const { contentType, topic } = await req.json();
 
     if (!contentType || !topic) {
@@ -209,11 +272,23 @@ Gere o conteúdo completo, pronto para usar. Seja criativo e engajador.`;
       } else {
         const imageError = await imageResponse.text();
         console.error("Image generation failed:", imageResponse.status, imageError);
-        // Continue without image - don't fail the whole request
       }
     } catch (imageError) {
       console.error("Error generating image:", imageError);
-      // Continue without image
+    }
+
+    // === SERVER-SIDE CREDIT DEBIT (after successful generation) ===
+    const { error: debitError } = await supabase.rpc("debit_credits", {
+      p_user_id: user.id,
+      p_credits: CREDITS_REQUIRED,
+      p_action_type: "generate_content",
+      p_description: `Geração de conteúdo: ${contentType} - ${topic}`,
+    });
+
+    if (debitError) {
+      console.error("Credit debit error:", debitError.message);
+    } else {
+      console.log(`Debited ${CREDITS_REQUIRED} credits from user ${user.id}`);
     }
 
     return new Response(

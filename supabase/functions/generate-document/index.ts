@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const CREDITS_REQUIRED = 2;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,6 +14,57 @@ serve(async (req) => {
   }
 
   try {
+    // === AUTHENTICATION ===
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("Missing or invalid Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Não autorizado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Auth error:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Não autorizado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Authenticated user: ${user.id}`);
+
+    // === SERVER-SIDE CREDIT CHECK ===
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("credits_balance")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error("Profile fetch error:", profileError?.message);
+      return new Response(
+        JSON.stringify({ error: "Perfil não encontrado" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (profile.credits_balance < CREDITS_REQUIRED) {
+      console.error(`Insufficient credits: ${profile.credits_balance} < ${CREDITS_REQUIRED}`);
+      return new Response(
+        JSON.stringify({ error: "Créditos insuficientes", required: CREDITS_REQUIRED, available: profile.credits_balance }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // === PARSE REQUEST ===
     const { type, area, input } = await req.json();
 
     if (!type || !area || !input) {
@@ -88,6 +142,21 @@ Por favor, gere o documento completo, bem estruturado e profissional.`;
     const output = data.choices?.[0]?.message?.content || "";
 
     console.log("Document generated successfully");
+
+    // === SERVER-SIDE CREDIT DEBIT (after successful generation) ===
+    const { error: debitError } = await supabase.rpc("debit_credits", {
+      p_user_id: user.id,
+      p_credits: CREDITS_REQUIRED,
+      p_action_type: "generate_document",
+      p_description: `Geração de documento: ${type} - ${area}`,
+    });
+
+    if (debitError) {
+      console.error("Credit debit error:", debitError.message);
+      // Still return the document since AI generation succeeded
+    } else {
+      console.log(`Debited ${CREDITS_REQUIRED} credits from user ${user.id}`);
+    }
 
     return new Response(
       JSON.stringify({ output }),
