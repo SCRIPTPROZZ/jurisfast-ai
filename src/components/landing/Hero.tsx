@@ -14,7 +14,8 @@ export function Hero() {
 
       <div className="relative z-10 w-full">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-center">
+          <div className="w-full min-h-[52vh] flex flex-col items-center justify-center text-center">
+
             {/* Logo central */}
             <div className="mb-6 animate-fade-in">
             <img
