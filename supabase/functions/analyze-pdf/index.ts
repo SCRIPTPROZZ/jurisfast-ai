@@ -74,14 +74,14 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Serviço de IA não configurado" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+if (!GOOGLE_API_KEY) {
+  console.error("GOOGLE_API_KEY not configured");
+  return new Response(
+    JSON.stringify({ error: "Chave do Google não configurada" }),
+    { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
 
     // Extract text from base64 PDF (simplified - the actual text extraction would need a library)
     // For now, we'll treat the pdfData as text content that was extracted client-side
