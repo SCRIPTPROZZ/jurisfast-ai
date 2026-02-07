@@ -4,10 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Profile {
   id: string;
-  user_id: string;
-  name: string;
+  full_name: string;
   plan: "free" | "basico" | "pro" | "business";
-  credits: number; // Backward compatibility alias
+  credits: number;
   credits_balance: number;
   monthly_credits_limit: number;
   extra_credits: number;
@@ -40,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .eq("user_id", userId)
+      .eq("id", userId)
       .single();
 
     if (error) {
@@ -48,12 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    // Map database fields to Profile interface with backward compatibility
     const profileData = data as any;
+
     return {
       ...profileData,
-      credits: profileData.credits_balance ?? profileData.credits ?? 0,
-      credits_balance: profileData.credits_balance ?? profileData.credits ?? 0,
+      full_name: profileData.full_name,
+      credits: profileData.credits_balance ?? 0,
+      credits_balance: profileData.credits_balance ?? 0,
       monthly_credits_limit: profileData.monthly_credits_limit ?? 0,
       extra_credits: profileData.extra_credits ?? 0,
     } as Profile;
@@ -67,13 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Defer profile fetch with setTimeout
         if (session?.user) {
           setTimeout(() => {
             fetchProfile(session.user.id).then(setProfile);
@@ -84,11 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         fetchProfile(session.user.id).then((profileData) => {
           setProfile(profileData);
@@ -104,14 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     const redirectUrl = `${window.location.origin}/dashboard`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          name: name,
+          full_name: name,
         },
       },
     });
