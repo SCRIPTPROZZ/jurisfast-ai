@@ -74,14 +74,14 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
-if (!GOOGLE_API_KEY) {
-  console.error("GOOGLE_API_KEY not configured");
-  return new Response(
-    JSON.stringify({ error: "Chave do Google não configurada" }),
-    { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "Serviço de IA não configurado" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const systemPrompt = `Você é um assistente jurídico especializado em criar documentos jurídicos brasileiros.
 Você deve criar documentos profissionais, bem estruturados e seguindo as normas técnicas do direito brasileiro.
